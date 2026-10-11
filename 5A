@@ -1,0 +1,479 @@
+```dart
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+void main() {
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => CatalogProvider(),
+      child: const MyApp(),
+    ),
+  );
+}
+
+// -------------------- MODEL --------------------
+
+class CatalogItem {
+  final int id;
+  final String name;
+  final String description;
+  final IconData icon;
+  final Color color;
+
+  CatalogItem({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.icon,
+    required this.color,
+  });
+}
+
+// -------------------- SHARED STATE: PROVIDER --------------------
+
+class CatalogProvider extends ChangeNotifier {
+  final List<CatalogItem> items = [
+    CatalogItem(
+      id: 1,
+      name: 'Laptop',
+      description: 'Powerful computing device',
+      icon: Icons.laptop,
+      color: Colors.blue.shade100,
+    ),
+    CatalogItem(
+      id: 2,
+      name: 'Smartphone',
+      description: 'Stay connected everywhere',
+      icon: Icons.smartphone,
+      color: Colors.green.shade100,
+    ),
+    CatalogItem(
+      id: 3,
+      name: 'Headphones',
+      description: 'Enjoy your favorite music',
+      icon: Icons.headphones,
+      color: Colors.orange.shade100,
+    ),
+    CatalogItem(
+      id: 4,
+      name: 'Camera',
+      description: 'Capture beautiful moments',
+      icon: Icons.camera_alt,
+      color: Colors.purple.shade100,
+    ),
+    CatalogItem(
+      id: 5,
+      name: 'Smartwatch',
+      description: 'Track your daily activities',
+      icon: Icons.watch,
+      color: Colors.pink.shade100,
+    ),
+    CatalogItem(
+      id: 6,
+      name: 'Tablet',
+      description: 'Portable entertainment',
+      icon: Icons.tablet,
+      color: Colors.teal.shade100,
+    ),
+  ];
+
+  final Set<int> _favorites = {};
+
+  bool isFavorite(int id) => _favorites.contains(id);
+
+  int get favoriteCount => _favorites.length;
+
+  void toggleFavorite(int id) {
+    if (!_favorites.add(id)) {
+      _favorites.remove(id);
+    }
+
+    notifyListeners();
+  }
+}
+
+// -------------------- MAIN APP --------------------
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Responsive Catalog',
+      theme: ThemeData(
+        colorSchemeSeed: Colors.indigo,
+        useMaterial3: true,
+      ),
+      home: const CatalogScreen(),
+    );
+  }
+}
+
+// -------------------- RESPONSIVE SCREEN --------------------
+
+class CatalogScreen extends StatelessWidget {
+  const CatalogScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+
+        if (width >= 1024) {
+          return const DesktopLayout();
+        } else if (width >= 600) {
+          return const TabletLayout();
+        } else {
+          return const MobileLayout();
+        }
+      },
+    );
+  }
+}
+
+// -------------------- APP BAR --------------------
+
+class CatalogAppBar extends StatelessWidget
+    implements PreferredSizeWidget {
+  const CatalogAppBar({super.key});
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      title: const Text(
+        'Product Catalog',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+      backgroundColor: Colors.indigo,
+      foregroundColor: Colors.white,
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: Center(
+            child: Consumer<CatalogProvider>(
+              builder: (context, catalog, child) {
+                return Badge(
+                  label: Text('${catalog.favoriteCount}'),
+                  child: const Icon(
+                    Icons.favorite,
+                    size: 28,
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// -------------------- MOBILE LAYOUT --------------------
+
+class MobileLayout extends StatelessWidget {
+  const MobileLayout({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: const CatalogAppBar(),
+      body: Column(
+        children: [
+          const LayoutInfo(label: 'Mobile Layout - 1 Column'),
+          Expanded(
+            child: Consumer<CatalogProvider>(
+              builder: (context, catalog, child) {
+                return ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: catalog.items.length,
+                  itemBuilder: (context, index) {
+                    return ProductCard(
+                      item: catalog.items[index],
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// -------------------- TABLET LAYOUT --------------------
+
+class TabletLayout extends StatelessWidget {
+  const TabletLayout({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: const CatalogAppBar(),
+      body: Column(
+        children: [
+          const LayoutInfo(label: 'Tablet Layout - 2 Columns'),
+          Expanded(
+            child: Consumer<CatalogProvider>(
+              builder: (context, catalog, child) {
+                return GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: catalog.items.length,
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 1.4,
+                  ),
+                  itemBuilder: (context, index) {
+                    return ProductCard(
+                      item: catalog.items[index],
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// -------------------- DESKTOP LAYOUT --------------------
+
+class DesktopLayout extends StatelessWidget {
+  const DesktopLayout({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: const CatalogAppBar(),
+      body: Row(
+        children: [
+          NavigationRail(
+            selectedIndex: 0,
+            onDestinationSelected: (index) {},
+            labelType: NavigationRailLabelType.all,
+            destinations: const [
+              NavigationRailDestination(
+                icon: Icon(Icons.home),
+                label: Text('Home'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.shopping_bag),
+                label: Text('Products'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.settings),
+                label: Text('Settings'),
+              ),
+            ],
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(
+            child: Column(
+              children: [
+                const LayoutInfo(label: 'Desktop Layout - 3 Columns'),
+
+                // Local state exists only in the desktop layout.
+                const DesktopCounter(),
+
+                Expanded(
+                  child: Consumer<CatalogProvider>(
+                    builder: (context, catalog, child) {
+                      return GridView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: catalog.items.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 1.3,
+                        ),
+                        itemBuilder: (context, index) {
+                          return ProductCard(
+                            item: catalog.items[index],
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// -------------------- LOCAL STATE: SETSTATE --------------------
+
+class DesktopCounter extends StatefulWidget {
+  const DesktopCounter({super.key});
+
+  @override
+  State<DesktopCounter> createState() => _DesktopCounterState();
+}
+
+class _DesktopCounterState extends State<DesktopCounter> {
+  int counter = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.all(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 8,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Local Counter: ',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text(
+              '$counter',
+              style: const TextStyle(
+                fontSize: 20,
+                color: Colors.indigo,
+              ),
+            ),
+            const SizedBox(width: 12),
+            IconButton(
+              tooltip: 'Increment counter',
+              onPressed: () {
+                setState(() {
+                  counter++;
+                });
+              },
+              icon: const Icon(
+                Icons.add_circle,
+                color: Colors.indigo,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// -------------------- PRODUCT CARD --------------------
+
+class ProductCard extends StatelessWidget {
+  final CatalogItem item;
+
+  const ProductCard({
+    super.key,
+    required this.item,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: item.color,
+      elevation: 3,
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(
+              item.icon,
+              size: 42,
+              color: Colors.indigo,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.name,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Flexible(
+                    child: Text(
+                      item.description,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Consumer<CatalogProvider>(
+              builder: (context, catalog, child) {
+                final favorite = catalog.isFavorite(item.id);
+
+                return IconButton(
+                  tooltip: favorite
+                      ? 'Remove from favorites'
+                      : 'Add to favorites',
+                  onPressed: () {
+                    catalog.toggleFavorite(item.id);
+                  },
+                  icon: Icon(
+                    favorite ? Icons.star : Icons.star_border,
+                    color: favorite ? Colors.amber.shade800 : Colors.grey,
+                    size: 30,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// -------------------- LAYOUT INFORMATION --------------------
+
+class LayoutInfo extends StatelessWidget {
+  final String label;
+
+  const LayoutInfo({
+    super.key,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      color: Colors.indigo.shade50,
+      child: Text(
+        label,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Colors.indigo,
+        ),
+      ),
+    );
+  }
+}
+```
